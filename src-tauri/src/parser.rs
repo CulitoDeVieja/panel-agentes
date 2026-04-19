@@ -74,8 +74,8 @@ fn extract_h1(content: &str) -> Option<String> {
 fn extract_field(content: &str, field: &str) -> Option<String> {
     let pattern = format!("**{}:**", field);
     content.lines().find(|l| l.contains(&pattern)).map(|l| {
-        l.splitn(2, &pattern)
-            .nth(1)
+        l.split_once(&*pattern)
+            .map(|x| x.1)
             .unwrap_or("")
             .trim()
             .to_string()
