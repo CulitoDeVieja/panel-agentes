@@ -34,7 +34,7 @@ fn repo_path(app: tauri::AppHandle) -> PathBuf {
 }
 
 #[tauri::command]
-pub fn list_tasks(app: tauri::AppHandle, estado: String, rol: String) -> Result<Vec<Task>, String> {
+pub fn list_tasks(app: tauri::AppHandle, estado: String, rol: Option<String>) -> Result<Vec<Task>, String> {
     let base = repo_path(app).join("tareas").join(&estado);
     if !base.exists() { return Ok(vec![]); }
     let mut tasks = Vec::new();
@@ -44,7 +44,9 @@ pub fn list_tasks(app: tauri::AppHandle, estado: String, rol: String) -> Result<
         if path.extension().and_then(|e| e.to_str()) != Some("md") { continue; }
         let filename = path.file_name().unwrap().to_string_lossy().to_string();
         if filename == ".gitkeep" { continue; }
-        if rol != "all" && !filename.starts_with(&format!("{}-", rol)) { continue; }
+        if let Some(r) = &rol {
+            if !filename.starts_with(&format!("{}-", r)) { continue; }
+        }
         let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
         tasks.push(parse_task(&content, &filename, path.to_str().unwrap_or("")));
     }

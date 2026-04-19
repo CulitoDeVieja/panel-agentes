@@ -6,12 +6,11 @@ export type Role =
   | "orchestrator"
   | "skills-curator"
   | "builder"
-  | "auditor-ops"
-  | "all";
+  | "auditor-ops";
 
 export const api = {
   listTasks: (estado: Estado, rol?: Role) =>
-    invoke<Task[]>("list_tasks", { estado, rol: rol ?? "all" }),
+    invoke<Task[]>("list_tasks", { estado, rol: rol ?? null }),
 
   readState: () => invoke<StateSnapshot>("read_state"),
 
