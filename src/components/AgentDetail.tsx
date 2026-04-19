@@ -1,4 +1,4 @@
-import type { AgentRole, Task } from "@/types";
+import type { AgentRole } from "@/types";
 import { useRepoData } from "@/context/RepoDataContext";
 import { AgentStatusBadge } from "./AgentStatusBadge";
 import { TaskList } from "./TaskList";
