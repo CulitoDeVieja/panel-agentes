@@ -7,8 +7,14 @@ App nativa Windows (Tauri 2 + React + TypeScript) que muestra el progreso de los
 - **Framework:** Tauri 2
 - **Frontend:** React 18 + TypeScript + Vite
 - **Estilos:** Tailwind CSS v4
-- **Backend:** Rust embebido (filesystem + git2)
+- **Backend:** Rust embebido (filesystem + `Command::new("git")` — ver `adr/001-stack-decisions.md`)
 - **Build:** `cargo tauri build` → `.msi` + portable `.exe`
+
+## Requisitos
+
+- Node.js **20+** (probado en 22 LTS).
+- Rust (stable) + target `x86_64-pc-windows-msvc`.
+- `git` en PATH.
 
 ## Estado
 
@@ -21,10 +27,16 @@ v0.1.0 — en planificación detallada. Ver `CulitoDeVieja/agente/planificacion/
 
 ## Build
 
-```
-pnpm install --frozen-lockfile
-pnpm build
+```bash
+npm ci
+npm run build
 cargo tauri build --target x86_64-pc-windows-msvc
+```
+
+## Tests
+
+```bash
+npm test
 ```
 
 ## Licencia

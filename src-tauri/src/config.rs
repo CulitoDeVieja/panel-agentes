@@ -8,10 +8,18 @@ pub struct AppConfig {
     pub auto_refresh_on_focus: bool,
 }
 
+fn default_repo_path() -> String {
+    dirs::data_local_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("agente-repo")
+        .to_string_lossy()
+        .into_owned()
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            repo_path: "C:/Users/Tony/AppData/Local/Temp/agente-repo".into(),
+            repo_path: default_repo_path(),
             refresh_timeout_ms: 5000,
             auto_refresh_on_focus: false,
         }
