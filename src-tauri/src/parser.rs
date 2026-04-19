@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: String,
     pub role: String,
@@ -16,6 +17,7 @@ pub struct Task {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AgentSnapshot {
     pub role: String,
     pub ubicacion: String,
@@ -23,6 +25,7 @@ pub struct AgentSnapshot {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StateSnapshot {
     pub updated: String,
     pub agents: Vec<AgentSnapshot>,

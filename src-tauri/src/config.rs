@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     pub repo_path: String,
     pub refresh_timeout_ms: u64,
