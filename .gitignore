@@ -1,0 +1,43 @@
+# Node
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Vite env
+.env
+.env.local
+.env.*.local
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+src-tauri/WixTools/
+**/*.rs.bk
+Cargo.lock.bak
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# OS
+ehthumbs.db
+Desktop.ini
+
+# Builds
+*.msi
+*.exe
+*.app
+*.dmg
+*.AppImage
+
+# Misc
+coverage/
+.nyc_output/
