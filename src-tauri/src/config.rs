@@ -51,6 +51,9 @@ pub fn load_config(config_dir: PathBuf) -> AppConfig {
 
 pub fn save_config(config_dir: PathBuf, cfg: &AppConfig) -> Result<(), String> {
     let path = config_path(config_dir);
-    std::fs::write(&path, serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?)
-        .map_err(|e| e.to_string())
+    std::fs::write(
+        &path,
+        serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())
 }

@@ -34,18 +34,30 @@ fn repo_path(app: tauri::AppHandle) -> PathBuf {
 }
 
 #[tauri::command]
-pub fn list_tasks(app: tauri::AppHandle, estado: String, rol: Option<String>) -> Result<Vec<Task>, String> {
+pub fn list_tasks(
+    app: tauri::AppHandle,
+    estado: String,
+    rol: Option<String>,
+) -> Result<Vec<Task>, String> {
     let base = repo_path(app).join("tareas").join(&estado);
-    if !base.exists() { return Ok(vec![]); }
+    if !base.exists() {
+        return Ok(vec![]);
+    }
     let mut tasks = Vec::new();
     for entry in std::fs::read_dir(&base).map_err(|e| e.to_string())? {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) != Some("md") { continue; }
+        if path.extension().and_then(|e| e.to_str()) != Some("md") {
+            continue;
+        }
         let filename = path.file_name().unwrap().to_string_lossy().to_string();
-        if filename == ".gitkeep" { continue; }
+        if filename == ".gitkeep" {
+            continue;
+        }
         if let Some(r) = &rol {
-            if !filename.starts_with(&format!("{}-", r)) { continue; }
+            if !filename.starts_with(&format!("{}-", r)) {
+                continue;
+            }
         }
         let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
         tasks.push(parse_task(&content, &filename, path.to_str().unwrap_or("")));
@@ -104,18 +116,26 @@ pub fn git_log(app: tauri::AppHandle, limit: usize) -> Result<Vec<GitCommit>, St
     let repo = repo_path(app);
     let format = "%H|%s|%an|%ai";
     let output = Command::new("git")
-        .args(["log", &format!("-{}", limit), &format!("--pretty=format:{}", format)])
+        .args([
+            "log",
+            &format!("-{}", limit),
+            &format!("--pretty=format:{}", format),
+        ])
         .current_dir(&repo)
         .output()
         .map_err(|e| e.to_string())?;
 
     let text = String::from_utf8_lossy(&output.stdout);
-    let commits = text.lines()
+    let commits = text
+        .lines()
         .filter(|l| !l.is_empty())
         .map(|l| {
             let parts: Vec<&str> = l.splitn(4, '|').collect();
             GitCommit {
-                hash: parts.first().map(|s| s[..7.min(s.len())].to_string()).unwrap_or_default(),
+                hash: parts
+                    .first()
+                    .map(|s| s[..7.min(s.len())].to_string())
+                    .unwrap_or_default(),
                 message: parts.get(1).map(|s| s.to_string()).unwrap_or_default(),
                 author: parts.get(2).map(|s| s.to_string()).unwrap_or_default(),
                 date: parts.get(3).map(|s| s.to_string()).unwrap_or_default(),
@@ -143,7 +163,12 @@ pub fn git_status(app: tauri::AppHandle) -> Result<GitStatus, String> {
         .map_err(|e| e.to_string())?;
     let dirty = !status.stdout.is_empty();
 
-    Ok(GitStatus { branch, dirty, ahead: 0, behind: 0 })
+    Ok(GitStatus {
+        branch,
+        dirty,
+        ahead: 0,
+        behind: 0,
+    })
 }
 
 #[tauri::command]

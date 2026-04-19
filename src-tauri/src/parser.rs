@@ -37,8 +37,12 @@ pub fn parse_task(content: &str, filename: &str, path_str: &str) -> Task {
         .map(|t| t.trim_start_matches("Tarea:").trim().to_string())
         .unwrap_or_else(|| filename.to_string());
 
-    let role = extract_field(content, "Rol").unwrap_or_default().to_lowercase();
-    let priority = extract_field(content, "Prioridad").unwrap_or_else(|| "media".into()).to_lowercase();
+    let role = extract_field(content, "Rol")
+        .unwrap_or_default()
+        .to_lowercase();
+    let priority = extract_field(content, "Prioridad")
+        .unwrap_or_else(|| "media".into())
+        .to_lowercase();
     let created_at = extract_field(content, "Creada").unwrap_or_default();
     let estado = derive_estado(path_str);
     let depende_de = parse_bullet_section(content, "Depende de:");
@@ -47,45 +51,73 @@ pub fn parse_task(content: &str, filename: &str, path_str: &str) -> Task {
 
     let id = filename.trim_end_matches(".md").to_string();
 
-    Task { id, role, title, priority, estado, depende_de, habilita, file: filename.to_string(), log, created_at }
+    Task {
+        id,
+        role,
+        title,
+        priority,
+        estado,
+        depende_de,
+        habilita,
+        file: filename.to_string(),
+        log,
+        created_at,
+    }
 }
 
 fn extract_h1(content: &str) -> Option<String> {
-    content.lines()
+    content
+        .lines()
         .find(|l| l.starts_with("# "))
         .map(|l| l.trim_start_matches("# ").trim().to_string())
 }
 
 fn extract_field(content: &str, field: &str) -> Option<String> {
     let pattern = format!("**{}:**", field);
-    content.lines()
-        .find(|l| l.contains(&pattern))
-        .map(|l| {
-            l.splitn(2, &pattern)
-                .nth(1)
-                .unwrap_or("")
-                .trim()
-                .to_string()
-        })
+    content.lines().find(|l| l.contains(&pattern)).map(|l| {
+        l.splitn(2, &pattern)
+            .nth(1)
+            .unwrap_or("")
+            .trim()
+            .to_string()
+    })
 }
 
 fn derive_estado(path: &str) -> String {
-    if path.contains("completado") { "completado".into() }
-    else if path.contains("en-curso") { "en-curso".into() }
-    else { "pendiente".into() }
+    if path.contains("completado") {
+        "completado".into()
+    } else if path.contains("en-curso") {
+        "en-curso".into()
+    } else {
+        "pendiente".into()
+    }
 }
 
 fn parse_bullet_section(content: &str, section: &str) -> Vec<String> {
     let mut in_section = false;
     let mut results = Vec::new();
     for line in content.lines() {
-        if line.contains(section) { in_section = true; continue; }
+        if line.contains(section) {
+            in_section = true;
+            continue;
+        }
         if in_section {
-            if line.starts_with("##") { break; }
-            let trimmed = line.trim().trim_start_matches('-').trim().trim_start_matches('*').trim();
-            if trimmed.is_empty() || trimmed == "(ninguna)" || trimmed.starts_with('(') { continue; }
+            if line.starts_with("##") {
+                break;
+            }
+            let trimmed = line
+                .trim()
+                .trim_start_matches('-')
+                .trim()
+                .trim_start_matches('*')
+                .trim();
+            if trimmed.is_empty() || trimmed == "(ninguna)" || trimmed.starts_with('(') {
+                continue;
+            }
             if let Some(file) = trimmed.split_whitespace().next() {
-                if file.ends_with(".md") { results.push(file.to_string()); }
+                if file.ends_with(".md") {
+                    results.push(file.to_string());
+                }
             }
         }
     }
@@ -97,9 +129,14 @@ fn extract_log(content: &str) -> Option<String> {
     if let Some(pos) = content.find(marker) {
         let after = &content[pos + marker.len()..];
         let log = after.trim();
-        if log.is_empty() || log == "(vacío hasta completar)" { None }
-        else { Some(log.to_string()) }
-    } else { None }
+        if log.is_empty() || log == "(vacío hasta completar)" {
+            None
+        } else {
+            Some(log.to_string())
+        }
+    } else {
+        None
+    }
 }
 
 pub fn parse_state(content: &str) -> StateSnapshot {
@@ -109,11 +146,21 @@ pub fn parse_state(content: &str) -> StateSnapshot {
     let mut updated = String::new();
 
     for line in content.lines() {
-        if line.contains("MODO MASTER") && line.contains("activo") { modo_master = true; }
-        if line.contains("**Última actualización:**") {
-            updated = line.split("**Última actualización:**").nth(1).unwrap_or("").trim().to_string();
+        if line.contains("MODO MASTER") && line.contains("activo") {
+            modo_master = true;
         }
-        if line.contains("| Rol |") { in_table = true; continue; }
+        if line.contains("**Última actualización:**") {
+            updated = line
+                .split("**Última actualización:**")
+                .nth(1)
+                .unwrap_or("")
+                .trim()
+                .to_string();
+        }
+        if line.contains("| Rol |") {
+            in_table = true;
+            continue;
+        }
         if in_table && line.starts_with('|') && !line.contains("---") {
             let cols: Vec<&str> = line.split('|').filter(|c| !c.trim().is_empty()).collect();
             if cols.len() >= 3 {
@@ -121,11 +168,19 @@ pub fn parse_state(content: &str) -> StateSnapshot {
                 let ubicacion = cols[1].trim().to_string();
                 let ultima_senal = cols[2].trim().to_string();
                 if !role.is_empty() && role != "rol" {
-                    agents.push(AgentSnapshot { role, ubicacion, ultima_senal });
+                    agents.push(AgentSnapshot {
+                        role,
+                        ubicacion,
+                        ultima_senal,
+                    });
                 }
             }
         }
     }
 
-    StateSnapshot { updated, agents, modo_master_active: modo_master }
+    StateSnapshot {
+        updated,
+        agents,
+        modo_master_active: modo_master,
+    }
 }
