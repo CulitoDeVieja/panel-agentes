@@ -1,62 +1,79 @@
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { api } from "@/lib/tauri";
+import type { Task, StateSnapshot, AppConfig } from "@/types";
+import { DEFAULT_CONFIG } from "@/types";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { fetchTareasList, parseTaskMarkdown } from '../utils'; // Asumiendo que estos son los hooks importados
-import { TaskParsed } from '../types'; // Asumiendo que este es el tipo importado
-
-type RepoData = {
-  tasks: TaskParsed[];
-  byRole: (role: string) => TaskParsed[];
-  refresh: () => Promise<void>;
+type RepoDataState = {
+  state: StateSnapshot | null;
+  tasks: Task[];
+  config: AppConfig;
   loading: boolean;
   error: string | null;
-  lastFetch: Date | null;
+  lastRefresh: Date | null;
+  refresh: () => Promise<void>;
+  setConfig: (cfg: AppConfig) => Promise<void>;
 };
 
-const RepoDataContext = createContext<RepoData>({
-  tasks: [],
-  byRole: () => [],
-  refresh: async () => {},
-  loading: false,
-  error: null,
-  lastFetch: null
-});
+const RepoDataContext = createContext<RepoDataState | null>(null);
 
-export const useRepoData = (): RepoData => useContext(RepoDataContext);
-
-export function RepoDataProvider({ children }: { children: React.ReactNode }): JSX.Element {
-  const [tasks, setTasks] = useState<TaskParsed[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+export function RepoDataProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<StateSnapshot | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [config, setConfigState] = useState<AppConfig>(DEFAULT_CONFIG);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
-  useEffect(() => {
-    const fetchRepoData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const rawTasks = await fetchTareasList();
-        const parsedTasks = await Promise.all(rawTasks.map(parseTaskMarkdown));
-        setTasks(parsedTasks);
-        setLastFetch(new Date());
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRepoData();
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [stateData, cfg, pending, inProgress, completed] = await Promise.all([
+        api.readState(),
+        api.getConfig(),
+        api.listTasks("pendiente"),
+        api.listTasks("en-curso"),
+        api.listTasks("completado"),
+      ]);
+      setState(stateData);
+      setConfigState(cfg);
+      setTasks([...pending, ...inProgress, ...completed]);
+      setLastRefresh(new Date());
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const refresh = async () => {
-    await fetchRepoData();
-  };
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await api.gitPull();
+      await loadData();
+    } catch (e) {
+      setError(String(e));
+      setLoading(false);
+    }
+  }, [loadData]);
 
-  const byRole = (role: string): TaskParsed[] => tasks.filter(task => task.role === role);
+  const setConfig = useCallback(async (cfg: AppConfig) => {
+    await api.setConfig(cfg);
+    setConfigState(cfg);
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   return (
-    <RepoDataContext.Provider value={{ tasks, byRole, refresh, loading, error, lastFetch }}>
+    <RepoDataContext.Provider value={{ state, tasks, config, loading, error, lastRefresh, refresh, setConfig }}>
       {children}
     </RepoDataContext.Provider>
   );
+}
+
+export function useRepoData(): RepoDataState {
+  const ctx = useContext(RepoDataContext);
+  if (!ctx) throw new Error("useRepoData must be used within RepoDataProvider");
+  return ctx;
 }
